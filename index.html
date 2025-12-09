@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Profile | Gallery Update</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            --card-glass: rgba(255, 255, 255, 0.08);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --primary: #00d2ff;
+            --text: #fff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text);
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- BACKGROUND --- */
+        .bg-particles { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        .blob {
+            position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.6;
+            animation: float 10s infinite alternate;
+        }
+        .blob:nth-child(1) { top: 10%; left: 10%; width: 200px; height: 200px; background: #3a7bd5; }
+        .blob:nth-child(2) { bottom: 20%; right: 10%; width: 250px; height: 250px; background: #89216b; animation-delay: -5s; }
+        @keyframes float { from { transform: translate(0,0); } to { transform: translate(20px, -20px); } }
+
+        /* --- HEADER --- */
+        header {
+            padding: 15px 40px; display: flex; justify-content: space-between; align-items: center;
+            z-index: 100; background: rgba(0,0,0,0.2); backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .logo { font-size: 1.4rem; font-weight: 700; letter-spacing: 1px; }
+        .logo span { color: var(--primary); }
+        nav ul { display: flex; list-style: none; gap: 10px; }
+        nav li button {
+            background: transparent; border: 1px solid transparent; color: #bbb;
+            font-size: 0.9rem; cursor: pointer; transition: 0.3s;
+            padding: 6px 16px; border-radius: 30px;
+        }
+        nav li button:hover, nav li button.active-nav {
+            color: #fff; background: rgba(255,255,255,0.1);
+            border-color: var(--primary); box-shadow: 0 0 15px rgba(0, 210, 255, 0.3);
+        }
+
+        /* --- 3D SLIDER --- */
+        .slider-container {
+            flex: 1; display: flex; justify-content: center; align-items: center;
+            perspective: 1200px; overflow: hidden; position: relative;
+        }
+
+        .slider-track {
+            position: relative; width: 100%; height: 650px;
+            display: flex; justify-content: center; align-items: center;
+            transform-style: preserve-3d;
+        }
+
+        .card {
+            position: absolute; width: 380px; height: 550px;
+            background: var(--card-glass);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border); border-radius: 24px;
+            padding: 25px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.7s, filter 0.7s;
+            display: flex; flex-direction: column;
+            cursor: default;
+        }
+        
+        .card-content {
+            overflow-y: auto; overflow-x: hidden; height: 100%; padding-right: 5px; padding-left: 10px;
+        }
+        .card-content::-webkit-scrollbar { width: 4px; }
+        .card-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+
+        /* Logic 3D */
+        .card.center {
+            transform: translateX(0) translateZ(300px) rotateY(0deg);
+            z-index: 10; opacity: 1; filter: brightness(1.1);
+            border: 1px solid rgba(0, 210, 255, 0.5);
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.2);
+        }
+        .card.left {
+            transform: translateX(-400px) translateZ(0) rotateY(25deg) scale(0.85);
+            z-index: 5; opacity: 0.5; filter: blur(3px); cursor: pointer;
+        }
+        .card.right {
+            transform: translateX(400px) translateZ(0) rotateY(-25deg) scale(0.85);
+            z-index: 5; opacity: 0.5; filter: blur(3px); cursor: pointer;
+        }
+        .card.hidden { transform: translateZ(-400px) scale(0.5); opacity: 0; z-index: 0; }
+
+        /* --- MŨI TÊN ĐIỀU HƯỚNG (HOVER NAV) --- */
+        .nav-arrow {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 40px; height: 40px; background: rgba(0, 0, 0, 0.6);
+            color: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; z-index: 50; opacity: 0; visibility: hidden; transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .nav-arrow:hover {
+            background: var(--primary); box-shadow: 0 0 10px var(--primary);
+            transform: translateY(-50%) scale(1.1);
+        }
+        .arrow-prev { left: 10px; }
+        .arrow-next { right: 10px; }
+        .card.center:hover .nav-arrow { opacity: 1; visibility: visible; }
+
+        /* --- CONTENT STYLES --- */
+        .card h2 { text-align: center; color: var(--primary); margin-bottom: 5px; font-size: 1.8rem; }
+        .card h4 { text-align: center; color: #ccc; font-weight: 300; margin-bottom: 20px; font-size: 0.9rem; }
+        
+        /* TABLE SCHEDULE STYLE */
+        .tkb-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .tkb-table th { text-align: center; color: var(--primary); padding: 8px 2px; border-bottom: 1px solid rgba(255,255,255,0.2); white-space: nowrap; }
+        .tkb-table td { padding: 8px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; line-height: 1.4; }
+        .tkb-table tr:last-child td { border-bottom: none; }
+        .subject { color: #fff; font-weight: 500; display: block; margin-bottom: 2px; }
+        .room { color: #aaa; font-size: 0.7rem; display: block; }
+        
+        /* Gallery Grid */
+        .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .gallery-item { position: relative; border-radius: 10px; height: 150px; overflow: hidden; }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+        .gallery-item:hover img { transform: scale(1.2); }
+        /* Bỏ style grid-column: span 2 để các ảnh đều nhau */
+        /* .gallery-item:nth-child(1) { grid-column: span 2; height: 180px; } */
+        
+        .socials { display: flex; justify-content: center; gap: 20px; margin-top: 20px; }
+        .socials a {
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; background: rgba(255,255,255,0.1); color: #fff; text-decoration: none; transition: 0.3s;
+        }
+        .socials a:hover { background: var(--primary); box-shadow: 0 0 15px var(--primary); }
+        
+        @media (max-width: 768px) {
+            .card { width: 90%; height: 65vh; }
+            .nav-arrow { opacity: 0.5; visibility: visible; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-particles"><div class="blob"></div><div class="blob"></div></div>
+
+    <header>
+        <div class="logo">VISUAL PROFILE<span style="color:var(--primary)">.</span></div>
+        <nav>
+            <ul>
+                <li><button onclick="goToSlide(0)" class="nav-btn active-nav">Trang Chủ</button></li>
+                <li><button onclick="goToSlide(1)" class="nav-btn">Thông Tin</button></li>
+                <li><button onclick="goToSlide(2)" class="nav-btn">Hình Ảnh</button></li>
+                <li><button onclick="goToSlide(3)" class="nav-btn">Lịch Học</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="slider-container">
+        <div class="slider-track" id="sliderTrack">
+            
+            <div class="card center" onclick="goToSlide(0)">
+                <div class="nav-arrow arrow-prev" onclick="changeSlide(-1, event)"><i class="fas fa-chevron-left"></i></div>
+                <div class="nav-arrow arrow-next" onclick="changeSlide(1, event)"><i class="fas fa-chevron-right"></i></div>
+                <div class="card-content">
+                    <div style="width: 130px; height: 130px; margin: 0 auto 20px; border-radius: 50%; overflow: hidden; border: 3px solid var(--primary); box-shadow: 0 0 20px rgba(0,210,255,0.6); position: relative;">
+                        <img src="https://i.ibb.co/NgGMy2gF/NOM01250.jpg" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                    </div>
+                    <h2>Đỗ Duy Trường</h2>
+                    <h4>Sinh Viên K25 - CNTT</h4>
+                    <p style="text-align: center; font-size: 0.95rem; color: #e0e0e0; margin-bottom: 20px;">
+                        Chào mừng các bạn đã đến với trang web giới thiệu của mình! 
+                    </p>
+                    <div class="socials">
+                        <a href="https://www.facebook.com/oduytruong.703427/" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://www.instagram.com/duytruongcml/" target="_blank"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.tiktok.com/@29112025ptbn_ddt" target="_blank"><i class="fab fa-tiktok"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card right" onclick="goToSlide(1)">
+                <div class="nav-arrow arrow-prev" onclick="changeSlide(-1, event)"><i class="fas fa-chevron-left"></i></div>
+                <div class="nav-arrow arrow-next" onclick="changeSlide(1, event)"><i class="fas fa-chevron-right"></i></div>
+                <div class="card-content">
+                    <h2>Về Bản Thân</h2>
+                    <h4 style="margin-bottom: 10px; color: var(--primary);">Thông tin bản thân</h4>
+                    <ul style="margin-left: 20px; margin-bottom: 15px; line-height: 1.6; font-size: 0.9rem;">
+                        <li><strong>Họ và tên:</strong> Đỗ Duy Trường</li>
+                        <li><strong>MSSV:</strong> 25120459</li>
+                        <li><strong>Lớp:</strong> 25CTT6</li>
+                        <li><strong>Khoa:</strong> Công nghệ thông tin</li>
+                    </ul>
+                    <h4 style="margin-bottom: 10px; margin-top: 15px; color: var(--primary);">Cá nhân & Mục tiêu</h4>
+                    <ul style="margin-left: 20px; margin-bottom: 15px; line-height: 1.6; font-size: 0.9rem;">
+                        <li><strong>Sở thích:</strong> Code dạo, nghe nhạc, chơi game chiến thuật, tìm hiểu công nghệ mới.</li>
+                        <li><strong>Điểm mạnh:</strong> Tư duy logic tốt, hòa đồng, có trách nhiệm với deadline.</li>
+                        <li><strong>Điểm yếu:</strong> Đôi khi hơi cầu toàn, tiếng Anh giao tiếp cần cải thiện thêm.</li>
+                        <li><strong>Ước mơ:</strong> Trở thành Machine Learning Engineer đích thực.</li>
+                    </ul>
+                    <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; margin-top: 10px;">
+                        <p style="font-style: italic; font-size: 0.85rem; text-align: center;">"Coding is poetry written in binary."</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card hidden" onclick="goToSlide(2)">
+                <div class="nav-arrow arrow-prev" onclick="changeSlide(-1, event)"><i class="fas fa-chevron-left"></i></div>
+                <div class="nav-arrow arrow-next" onclick="changeSlide(1, event)"><i class="fas fa-chevron-right"></i></div>
+                <div class="card-content">
+                    <h2>Thư Viện Ảnh</h2>
+                    <h4>Hoạt động & Sự kiện</h4>
+                    <div class="gallery-grid">
+                        <div class="gallery-item"><img src="https://i.ibb.co/NgGMy2gF/NOM01250.jpg" alt="Home Image"></div>
+                        <div class="gallery-item"><img src="https://i.ibb.co/LqHZK5Y/z7309567618884-ab4e50b5f3f14d364604d9307a2ebde7.jpg" alt="Gallery 1"></div>
+                        <div class="gallery-item"><img src="https://i.ibb.co/zV4DxXRH/z7309567670061-21b80ae49ee5c47c1c336eb66f984b9a.jpg" alt="Gallery 2"></div>
+                        <div class="gallery-item"><img src="https://i.ibb.co/zVJ5G575/z7309567670752-a292c8b36a9ae48114a8656f6355336e.jpg" alt="Gallery 3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card hidden" onclick="goToSlide(3)">
+                <div class="nav-arrow arrow-prev" onclick="changeSlide(-1, event)"><i class="fas fa-chevron-left"></i></div>
+                <div class="nav-arrow arrow-next" onclick="changeSlide(1, event)"><i class="fas fa-chevron-right"></i></div>
+                <div class="card-content">
+                    <h2>Lịch Học</h2>
+                    <h4>HK1 - Năm học 2025</h4>
+                    <table class="tkb-table">
+                        <thead>
+                            <tr><th style="width: 15%">Thứ</th><th style="width: 42%">Sáng (T1-5)</th><th style="width: 43%">Chiều (T6-10)</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>T2</td><td><span class="subject">Thể dục 1</span><span class="room">P.cs2:KHTN8</span></td><td><span class="subject">Anh văn bổ túc</span><span class="room">P.cs2:NĐH6.2</span></td></tr>
+                            <tr><td>T3</td><td><span class="room" style="text-align: center; display:block;">---</span></td><td><span class="subject">Toán rời rạc (LT)</span><span class="room">P.cs2:E303</span></td></tr>
+                            <tr><td>T4</td><td><span class="subject">Vi tích phân 1 (TH)</span><span class="room">P.cs2:PMT_NĐH4.4</span></td><td><span class="subject">Toán rời rạc (TH)</span><span class="room">P.cs2:NĐH7.8</span></td></tr>
+                            <tr><td>T5</td><td><span class="subject">NM CNTT (LT)</span><span class="room">P.cs2:E210</span></td><td><span class="room" style="text-align: center; display:block;">---</span></td></tr>
+                            <tr><td>T6</td><td><span class="subject">Cơ sở lập trình (TH)</span><span class="room">P.cs2:PMT_D203</span><div style="margin-top:5px; border-top:1px dashed #555;"></div><span class="subject">NM CNTT (TH)</span><span class="room">P.cs2:PMT_D203</span></td><td><span class="subject">Vi tích phân 1 (LT)</span><span class="room">P.cs2:E208</span></td></tr>
+                            <tr><td>T7</td><td><span class="subject">Cơ sở lập trình (LT)</span><span class="room">P.cs2:E203</span></td><td><span class="room" style="text-align: center; display:block;">---</span></td></tr>
+                             <tr><td>CN</td><td colspan="2" style="text-align: center; color: #888; font-style: italic;">Ôn bài / Nghỉ ngơi</td></tr>
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+                        <h5 style="color: var(--primary); margin-bottom: 5px;">Lịch Tối:</h5>
+                        <ul style="font-size: 0.8rem; margin-left: 20px; color: #ddd;">
+                            <li><strong>T2, T4, T6:</strong> Tự học / Làm bài tập + Deadline</li>
+                            <li><strong>T3, T5:</strong> Học thêm Tiếng Anh + Deadline</li>
+                            <li><strong>T7, CN:</strong> Giải trí / Coding Project + Deadline</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer>&copy; 2025 Đỗ Duy Trường </footer>
+
+    <script>
+        const cards = document.querySelectorAll('.card');
+        const navBtns = document.querySelectorAll('.nav-btn');
+        let currentIndex = 0; 
+        const totalCards = cards.length;
+
+        function updateCards() {
+            cards.forEach((card, index) => {
+                card.className = 'card'; 
+                let diff = (index - currentIndex + totalCards) % totalCards;
+                if (diff === 0) card.classList.add('center');
+                else if (diff === totalCards - 1) card.classList.add('left');
+                else if (diff === 1) card.classList.add('right');
+                else card.classList.add('hidden');
+            });
+            navBtns.forEach((btn, idx) => {
+                if(idx === currentIndex) btn.classList.add('active-nav');
+                else btn.classList.remove('active-nav');
+            });
+        }
+
+        function goToSlide(index) {
+            currentIndex = index;
+            updateCards();
+        }
+
+        function changeSlide(direction, event) {
+            if(event) event.stopPropagation();
+            let newIndex = currentIndex + direction;
+            if (newIndex < 0) newIndex = totalCards - 1;
+            if (newIndex >= totalCards) newIndex = 0;
+            goToSlide(newIndex);
+        }
+
+        updateCards();
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') changeSlide(1);
+            else if (e.key === 'ArrowLeft') changeSlide(-1);
+        });
+    </script>
+</body>
+</html>
